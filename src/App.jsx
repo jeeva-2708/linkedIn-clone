@@ -10,12 +10,12 @@ import PrivateRoute from './pages/PrivateRoute';
 function App() {
   return (
     <Routes>
-      <Route path='/' element={   <PrivateRoute>
+      <Route path='/' element={   
               <Home />
-            </PrivateRoute>}/>
-      <Route path='/profile' element={  <PrivateRoute>
+            }/>
+      <Route path='/profile' element={  
               <Profile />
-            </PrivateRoute>}/>
+            }/>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       {/* Redirect unknown paths to Login for now */}
