@@ -19,7 +19,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       {/* Redirect unknown paths to Login for now */}
-      <Route path="*" element={<Login />} />
+     
     </Routes>
   );
 }
