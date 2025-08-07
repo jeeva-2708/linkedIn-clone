@@ -11,6 +11,7 @@ import {
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { Link, useNavigate } from 'react-router-dom';
 import { onSnapshot } from "firebase/firestore";
+
 const Home = () => {
   const [post, setPost] = useState('');
   const [posts, setPosts] = useState([]);
@@ -26,22 +27,20 @@ const Home = () => {
       }
     });
 
-    fetchPosts();
+    
     return () => unsubscribe();
   }, []);
 
- 
-
-useEffect(() => {
+ useEffect(() => {
   const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+
   const unsubscribe = onSnapshot(q, (snapshot) => {
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setPosts(data);
   });
 
-  return () => unsubscribe(); // Clean up the listener when the component unmounts
+  return () => unsubscribe();
 }, []);
-
 
   const handlePost = async (e) => {
     e.preventDefault();
