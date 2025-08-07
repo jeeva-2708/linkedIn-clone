@@ -3,14 +3,15 @@ import { db, auth } from '../firebase/config';
 import {
   collection,
   addDoc,
-  getDocs,
+  deleteDoc,
+  doc,
   query,
   orderBy,
   serverTimestamp,
+  onSnapshot
 } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { Link, useNavigate } from 'react-router-dom';
-import { onSnapshot } from "firebase/firestore";
 
 const Home = () => {
   const [post, setPost] = useState('');
@@ -18,30 +19,35 @@ const Home = () => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
+  // ✅ Auth state check
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
-        navigate('/'); // if not logged in, redirect to login
+        navigate('/'); // redirect if not logged in
       } else {
         setUser(currentUser);
       }
     });
 
-    
     return () => unsubscribe();
   }, []);
 
- useEffect(() => {
-  const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+  // ✅ Real-time post feed
+  useEffect(() => {
+    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setPosts(data);
-  });
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setPosts(data);
+    });
 
-  return () => unsubscribe();
-}, []);
+    return () => unsubscribe();
+  }, []);
 
+  // ✅ Handle new post submit
   const handlePost = async (e) => {
     e.preventDefault();
     if (!post.trim()) return;
@@ -54,9 +60,22 @@ const Home = () => {
     });
 
     setPost('');
-    fetchPosts();
   };
 
+  // ✅ Handle post deletion
+  const handleDelete = async (postId) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this post?');
+    if (!confirmDelete) return;
+
+    try {
+      await deleteDoc(doc(db, 'posts', postId));
+      console.log('Post deleted!');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+    }
+  };
+
+  // ✅ Logout function
   const handleLogout = async () => {
     await signOut(auth);
     navigate('/login');
@@ -67,16 +86,15 @@ const Home = () => {
       {/* ✅ Header */}
       <header className="flex items-center justify-between px-6 py-4 bg-white shadow-md">
         <div className="flex items-center space-x-2">
-         <h1 className="text-xl font-bold text-gray-700">LinkedHub</h1>
-          
+          <h1 className="text-xl font-bold text-gray-700">LinkedHub</h1>
         </div>
         <div className="flex items-center space-x-4">
           <Link to="/profile">
-          <img
-            src="https://www.w3schools.com/howto/img_avatar.png"
-            alt="Profile"
-            className="w-8 h-8 rounded-full object-cover"
-          />
+            <img
+              src="https://www.w3schools.com/howto/img_avatar.png"
+              alt="Profile"
+              className="w-8 h-8 rounded-full object-cover"
+            />
           </Link>
           <button
             onClick={handleLogout}
@@ -90,6 +108,7 @@ const Home = () => {
       {/* ✅ Post Feed */}
       <div className="max-w-2xl mx-auto p-4">
         <h2 className="text-2xl font-semibold mb-4">Home Feed</h2>
+
         <form onSubmit={handlePost} className="mb-6">
           <textarea
             value={post}
@@ -104,10 +123,21 @@ const Home = () => {
             Post
           </button>
         </form>
+
         <div className="space-y-4">
           {posts.map((p) => (
             <div key={p.id} className="border p-4 rounded shadow bg-white">
-              <p className="text-sm text-gray-500">{p.author}</p>
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-gray-500">{p.author}</p>
+                {user?.uid === p.uid && (
+                  <button
+                    onClick={() => handleDelete(p.id)}
+                    className="text-red-500 text-sm hover:underline"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
               <p className="mt-1">{p.content}</p>
               <p className="text-xs text-gray-400 mt-2">
                 {p.createdAt?.toDate().toLocaleString() || 'Just now'}
